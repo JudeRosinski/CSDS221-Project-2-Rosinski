@@ -17,25 +17,19 @@ import Container from '@mui/material/Container';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
 import TextField from '@mui/material/TextField';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
-import { DesktopDatePicker } from '@mui/x-date-pickers/DesktopDatePicker';
 import Stack from '@mui/material/Stack';
 import Radio from '@mui/material/Radio';
 import RadioGroup from '@mui/material/RadioGroup';
 import FormControlLabel from '@mui/material/FormControlLabel';
-import FormControl from '@mui/material/FormControl';
 import FormLabel from '@mui/material/FormLabel';
 import DoNotDisturbAltRoundedIcon from '@mui/icons-material/DoNotDisturbAltRounded';
 import Checkbox from '@mui/material/Checkbox';
-
-import moment from 'moment';
 import toastr from 'toastr';
 
-let nextId = 0;
-let priorityChoice = '';
+import moment from 'moment';
+import jquery from 'jquery';
 
 export default function App() {
   const [title, setTitle] = useState('');
@@ -52,12 +46,14 @@ export default function App() {
   const [descriptionError, setDescriptionError] = React.useState(false);
   const [titleHelper, setTitleHelper] = useState('');
   const [descriptionHelper, setDescriptionHelper] = useState('');
+  let [id, setId] = React.useState(0);
+  const [taskComplete, setTaskComplete] = React.useState(false);
 
   function addRow(title, description, deadline, priority) {
     setTask([
       ...Task,
       {
-        id: nextId++,
+        id: id,
         title: title,
         description: description,
         deadline: deadline,
@@ -65,18 +61,56 @@ export default function App() {
         isComplete: isComplete,
       },
     ]);
-    {Task.map((Task) => (
-      console.log(Task.id)
-    ))}
+    setId((id) => id + 1);
   }
 
-  
+  let changeTitle = (value) => {
+    setTitle(value);
+  };
 
+  let changeDescription = (value) => {
+    setDescription(value);
+  };
+
+  function changeDeadline(value) {
+    setDeadline(value);
+  }
+
+  function toggleUpdate(id) {
+    let index = 0;
+    for (let i = 0; i < Task.length; i++) {
+      if (Task[i].id == id) {
+        index = i;
+      }
+    }
+    setTask((Task) => {
+      let newTask = [...Task];
+      Task[index].isComplete = !Task[index].isComplete;
+      return newTask;
+    });
+  }
+
+  function checkUnique(newTitle) {
+    let titleTaken = 0;
+    for (let i = 0; i < Task.length; i++) {
+      if (Task[i].title == newTitle) {
+        titleTaken = 1;
+      }
+    }
+    return titleTaken;
+  }
+
+  toastr.options = {
+    positionClass: 'toast-bottom-left',
+  };
 
   function validateValues() {
     if (document.getElementById('nameInput').value == '') {
       setTitleError(true);
       setTitleHelper('Title is Required!');
+    } else if (checkUnique(document.getElementById('nameInput').value) == 1) {
+      setTitleError(true);
+      setTitleHelper('Needs a Unique Title!');
     } else if (document.getElementById('nameInput').value != '') {
       setTitleError(false);
       setTitleHelper('');
@@ -90,17 +124,77 @@ export default function App() {
     }
     if (
       document.getElementById('nameInput').value != '' &&
-      document.getElementById('descriptionInput').value != ''
+      document.getElementById('descriptionInput').value != '' &&
+      checkUnique(document.getElementById('nameInput').value) == 0
     ) {
       addRow(
         document.getElementById('nameInput').value,
         document.getElementById('descriptionInput').value,
-        moment(document.getElementById('dateInput').value).format('MM/DD/YYYY'),
+        document.getElementById('dateInput').value,
         priority
       );
       handleClose();
+      toastr.success('Item Successfully Added!');
     }
   }
+
+  function validateEdit() {
+    if (document.getElementById('descriptionInput').value == '') {
+      setDescriptionError(true);
+      setDescriptionHelper('Description is Required!');
+    } else if (document.getElementById('descriptionInput').value != '') {
+      setDescriptionError(false);
+      setDescriptionHelper('');
+    }
+    if (document.getElementById('descriptionInput').value != '') {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  const editRow = (id, description, deadline, priority) => {
+    let index = 0;
+    for (let i = 0; i < Task.length; i++) {
+      if (Task[i].id == id) {
+        index = i;
+      }
+    }
+    if (validateEdit() == 1) {
+      Task[index].description = description;
+      Task[index].deadline = deadline;
+      Task[index].priority = priority;
+      handleClose();
+      toastr.success('Item Successfully Updated!');
+    }
+  };
+
+  const fillValues = (id) => {
+    let index = 0;
+    for (let i = 0; i < Task.length; i++) {
+      if (Task[i].id == id) {
+        index = i;
+      }
+    }
+    setDescription(Task[index].description);
+    setDeadline(Task[index].deadline);
+    setPriority(Task[index].priority);
+  };
+
+  const deleteRow = (id) => {
+    let index = 0;
+    for (let i = 0; i < Task.length; i++) {
+      if (Task[i].id == id) {
+        index = i;
+      }
+    }
+    setTask((Task) => {
+      let newTask = [...Task];
+      newTask.splice(index, 1);
+      setTask([...newTask]);
+      return newTask;
+    });
+  };
 
   const handleClickOpen = () => {
     setOpen(true);
@@ -118,10 +212,6 @@ export default function App() {
 
   const handleEditOpen = () => {
     setEditBar(true);
-  };
-
-  const checkedBox = (nextId) => {
-    setChecked(nextId.target.checked);
   };
 
   return (
@@ -160,7 +250,7 @@ export default function App() {
           </Toolbar>
         </AppBar>
         <DialogContent>
-          <Stack component="form" validate spacing={1}>
+          <Stack component="form" spacing={1}>
             <TextField
               id="nameInput"
               label="Title"
@@ -169,6 +259,8 @@ export default function App() {
               fullWidth
               error={titleError}
               helperText={titleHelper}
+              value={title}
+              onChange={(e) => changeTitle(e.target.value)}
             />
             <br style={{ display: appBar ? 'block' : 'none' }} />
             <TextField
@@ -178,11 +270,12 @@ export default function App() {
               fullWidth
               error={descriptionError}
               helperText={descriptionHelper}
+              value={description}
+              onChange={(e) => changeDescription(e.target.value)}
             />
             <br />
             <TextField
               type="date"
-              defaultValue={'2022-11-09'}
               id="dateInput"
               label="Deadline"
               style={{ display: 'block' }}
@@ -190,30 +283,39 @@ export default function App() {
                 shrink: true,
               }}
               fullWidth
+              value={deadline}
+              onChange={(e) => changeDeadline(e.target.value)}
             />
 
             <FormLabel>Priority</FormLabel>
             <RadioGroup
               row
               name="row-radio-buttons-group"
-              defaultValue="low"
+              defaultValue="Low"
               id="radioInputs"
               value={priority}
               onChange={(e) => setPriority(e.target.value)}
             >
-              <FormControlLabel value="low" control={<Radio />} label="Low" />
+              <FormControlLabel value="Low" control={<Radio />} label="Low" />
               <FormControlLabel
-                value="medium"
+                value="Medium"
                 control={<Radio />}
                 label="Medium"
               />
-              <FormControlLabel value="high" control={<Radio />} label="High" />
+              <FormControlLabel value="High" control={<Radio />} label="High" />
             </RadioGroup>
           </Stack>
         </DialogContent>
         <DialogActions>
           <Button
-            onClick={handleClose}
+            onClick={() => {
+              editRow(
+                document.getElementById('nameInput').value,
+                document.getElementById('descriptionInput').value,
+                document.getElementById('dateInput').value,
+                priority
+              );
+            }}
             style={{
               background: '#1E88E5',
               color: 'white',
@@ -271,6 +373,10 @@ export default function App() {
             onClick={() => {
               handleClickOpen();
               handleAppOpen();
+              setTitle('');
+              setDescription('');
+              setDeadline('2022-11-17');
+              setPriority('Low');
             }}
           >
             <AddCircleIcon fontSize="small" />
@@ -294,43 +400,51 @@ export default function App() {
             <TableRow key={Task.id}>
               <TableCell align="center">{Task.title}</TableCell>
               <TableCell align="center">{Task.description}</TableCell>
-              <TableCell align="center">{Task.deadline}</TableCell>
+              <TableCell align="center">
+                {moment(Task.deadline).format('MM/DD/YYYY')}
+              </TableCell>
               <TableCell align="center">{Task.priority}</TableCell>
               <TableCell align="center">
                 <Checkbox
-                  name={nextId}
-                  onChange={checkedBox}
-                  inputProps={{ 'aria-label': 'controlled' }}
+                  onClick={() => {
+                    toggleUpdate(Task.id);
+                  }}
                 />
               </TableCell>
               <TableCell align="center">
+                {!Task.isComplete ? (
+                  <div>
+                    <Button
+                      onClick={() => {
+                        handleClickOpen();
+                        handleEditOpen();
+                        fillValues(Task.id);
+                      }}
+                      style={{
+                        background: '#1E88E5',
+                        color: 'white',
+                        width: 100,
+                      }}
+                    >
+                      <Grid
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <EditRoundedIcon fontSize="small" />
+                        &nbsp;Update
+                      </Grid>
+                    </Button>
+                  </div>
+                ) : (
+                  <></>
+                )}
                 <div>
                   <Button
                     onClick={() => {
-                      console.log(Task);
-                      handleClickOpen();
-                      handleEditOpen();
+                      deleteRow(Task.id);
+                      toastr.success('Item Successfully Deleted!');
                     }}
-                    style={{
-                      background: '#1E88E5',
-                      color: 'white',
-                      display: appBar ? 'none' : '',
-                      width: 100,
-                    }}
-                  >
-                    <Grid
-                      display="flex"
-                      justifyContent="center"
-                      alignItems="center"
-                    >
-                      <EditRoundedIcon fontSize="small" />
-                      &nbsp;Update
-                    </Grid>
-                  </Button>
-                </div>
-                <div>
-                  <Button
-                    onClick={handleClose}
                     style={{
                       background: '#dc3545',
                       color: 'white',
