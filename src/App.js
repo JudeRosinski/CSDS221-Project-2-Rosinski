@@ -31,6 +31,8 @@ import toastr from 'toastr';
 import moment from 'moment';
 import jquery from 'jquery';
 
+let index = 0;
+
 export default function App() {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -153,24 +155,8 @@ export default function App() {
     }
   }
 
-  const editRow = (id, description, deadline, priority) => {
-    let index = 0;
-    for (let i = 0; i < Task.length; i++) {
-      if (Task[i].id == id) {
-        index = i;
-      }
-    }
-    if (validateEdit() == 1) {
-      Task[index].description = description;
-      Task[index].deadline = deadline;
-      Task[index].priority = priority;
-      handleClose();
-      toastr.success('Item Successfully Updated!');
-    }
-  };
-
   const fillValues = (id) => {
-    let index = 0;
+    index = 0;
     for (let i = 0; i < Task.length; i++) {
       if (Task[i].id == id) {
         index = i;
@@ -180,6 +166,16 @@ export default function App() {
     setDeadline(Task[index].deadline);
     setPriority(Task[index].priority);
   };
+
+  const editRow = (description, deadline, priority) => {
+    if (validateEdit() == 1) {
+      Task[index].description = description;
+      Task[index].deadline = deadline;
+      Task[index].priority = priority;
+      handleClose();
+      toastr.success('Item Successfully Updated!');
+    }
+  };  
 
   const deleteRow = (id) => {
     let index = 0;
@@ -310,7 +306,6 @@ export default function App() {
           <Button
             onClick={() => {
               editRow(
-                document.getElementById('nameInput').value,
                 document.getElementById('descriptionInput').value,
                 document.getElementById('dateInput').value,
                 priority
