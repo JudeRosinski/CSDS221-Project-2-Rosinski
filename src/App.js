@@ -50,7 +50,6 @@ export default function App() {
   const [titleHelper, setTitleHelper] = useState('');
   const [descriptionHelper, setDescriptionHelper] = useState('');
   let [id, setId] = React.useState(0);
-  const [taskComplete, setTaskComplete] = React.useState(false);
 
   function addRow(title, description, deadline, priority) {
     setTask([
