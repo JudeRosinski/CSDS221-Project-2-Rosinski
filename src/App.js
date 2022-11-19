@@ -27,6 +27,7 @@ import FormLabel from '@mui/material/FormLabel';
 import DoNotDisturbAltRoundedIcon from '@mui/icons-material/DoNotDisturbAltRounded';
 import Checkbox from '@mui/material/Checkbox';
 import toastr from 'toastr';
+import 'toastr/build/toastr.min.css';
 
 import moment from 'moment';
 import jquery from 'jquery';
@@ -175,7 +176,7 @@ export default function App() {
       handleClose();
       toastr.success('Item Successfully Updated!');
     }
-  };  
+  };
 
   const deleteRow = (id) => {
     let index = 0;
